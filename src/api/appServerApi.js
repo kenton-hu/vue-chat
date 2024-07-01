@@ -10,14 +10,18 @@ export class AppServerApi {
     constructor() {
     }
 
+    searchAbcUserList(username) {
+        return this._post('/user/abc/search?username=' + username, {}, false, true)
+    }
+
     requestAuthCode(mobile) {
         return this._post('/send_code', {mobile})
     }
 
-    loinWithPassword(mobile, password) {
+    loinWithPassword(userName, password) {
         return new Promise((resolve, reject) => {
             let responsePromise = this._post('/login_pwd', {
-                mobile,
+                userName,
                 password,
                 platform: Config.getWFCPlatform(),
                 clientId: wfc.getClientId()

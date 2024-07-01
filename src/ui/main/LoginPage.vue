@@ -18,13 +18,13 @@
                     <p style="font-size: 20px; color: #353535; padding-bottom: 10px">{{ $t('login.desc') }}</p>
                     <p style="font-size: 15px; color: #a3a3a3">{{ $t('login.tip_web') }}</p>
                     <p style="font-size: 15px; color: #a3a3a3; padding-bottom: 5px">{{ $t('login.warning') }}</p>
-                    <a style="font-size: 15px; color: #4168e0" target="_blank" href="https://static.wildfirechat.net/download_qrcode.png">点击下载野火IM移动端</a>
+                    <a style="font-size: 15px; color: #4168e0" target="_blank" href="https://static.wildfirechat.net/download_qrcode.png">点击下载OK移动端</a>
                 </div>
                 <!--    已经扫码-->
                 <div v-else-if="loginStatus === 1" class="scanned">
                     <p>{{ userName + $t('login.scan_qr_success') }}</p>
                     <p>{{ $t('login.confirm_login_tip') }}</p>
-                    <label style="display: none">
+                    <label>
                         {{ $t('login.remember_me') }}
                         <input type="checkbox" v-model="enableAutoLogin">
                     </label>
@@ -52,17 +52,20 @@
                 <!--            密码登录-->
                 <img class="logo" :src="require(`@/assets/images/icon.png`)" alt="">
                 <p class="title">密码登录</p>
-                <div class="item">
+                <!-- <div class="item">
                     <input v-model.trim="mobile" class="text-input" type="number" placeholder="请输入手机号">
+                </div> -->
+                <div class="item">
+                    <input v-model.trim="userName" class="text-input" placeholder="请输入账号">
                 </div>
                 <div class="item">
                     <input v-model.trim="password" class="text-input" @keydown.enter="loginWithPassword" type="password" placeholder="请输入密码">
                 </div>
-                <div v-if="loginStatus === 0" style="display: flex; justify-content: space-between; width: 100%; ">
+                <div v-if="loginStatus === 0" style="display: none; justify-content: space-between; width: 100%; ">
                     <p class="tip" @click="switchLoginType(2)">使用验证码登录</p>
                     <p class="tip" @click="register">注册</p>
                 </div>
-                <button class="login-button" :disabled="mobile === '' || !password || password === ''" ref="loginWithPasswordButton" @click="loginWithPassword">{{ loginStatus === 3 ? '数据同步中，可能需要数分钟...' : '登录' }}</button>
+                <button class="login-button" :disabled="userName === '' || !password || password === ''" ref="loginWithPasswordButton" @click="loginWithPassword">{{ loginStatus === 3 ? '数据同步中，可能需要数分钟...' : '登录' }}</button>
                 <ClipLoader v-if="loginStatus === 3" class="syncing" :color="'#4168e0'" :height="'80px'" :width="'80px'"/>
             </div>
             <div v-else class="login-form-container">
@@ -81,7 +84,7 @@
                 <ClipLoader v-if="loginStatus === 3" style="margin-top: 10px" class="syncing" :color="'4168e0'" :height="'80px'" :width="'80px'"/>
             </div>
             <div v-if="loginStatus === 0" class="switch-login-type-container">
-                <p class="tip" @click="switchLoginType( loginType === 0 ? 1 : 0)">{{ loginType === 0 ? '使用密码/验证码登录' : '扫码登录' }}</p>
+                <p class="tip" @click="switchLoginType( loginType === 0 ? 1 : 0)">{{ loginType === 0 ? '使用密码/验证码登录' : '' }}</p>
             </div>
         </div>
     </div>
@@ -115,8 +118,8 @@ export default {
             qrCodeTimer: null,
             appToken: '',
             lastAppToken: '',
-            loginType: 0, // 0 扫码登录，1 密码登录，2 验证码登录
-            enableAutoLogin: Config.ENABLE_AUTO_LOGIN,
+            loginType: 1, // 0 扫码登录，1 密码登录，2 验证码登录
+            enableAutoLogin: false,
             mobile: '',
             password: '',
             authCode: '',
@@ -180,13 +183,13 @@ export default {
         },
 
         async loginWithPassword() {
-            if (!this.mobile || !this.password) {
+            if (!this.userName || !this.password) {
                 return;
             }
 
             this.$refs.loginWithPasswordButton.disabled = true;
             this.loginStatus = 3;
-            appServerApi.loinWithPassword(this.mobile, this.password)
+            appServerApi.loinWithPassword(this.userName, this.password)
                 .then(res => {
                     const {userId, token, portrait} = res
                     this.firstTimeConnect = wfc.connect(userId, token);
@@ -207,6 +210,7 @@ export default {
         },
 
         async loginWithAuthCode() {
+            console.log("------------------")
             if (!this.mobile || !this.authCode) {
                 return;
             }

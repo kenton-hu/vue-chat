@@ -44,6 +44,7 @@ import NullChannelInfo from "./wfc/model/NullChannelInfo";
 import ModifyGroupSettingNotification from "./wfc/messages/notification/modifyGroupSettingNotification";
 import {storeToRefs} from 'pinia'
 import {pstore} from './pstore'
+import appServerApi from "./api/appServerApi";
 
 
 /**
@@ -1684,10 +1685,19 @@ let store = {
 
     searchUser(query, domainId = '') {
         console.log('search user', query)
+        let resultArray = []
         wfc.searchUserEx(domainId, query, SearchType.General, 0, ((keyword, userInfos) => {
             console.log('search user result', query, userInfos)
+            console.log("searchState.query", searchState.query)
+            console.log("searchState.userSearchResult ", searchState.userSearchResult )
             if (searchState.query === keyword) {
-                searchState.userSearchResult = userInfos.filter(u => !wfc.isMyFriend(u.uid));
+                let users = userInfos.filter(u => !wfc.isMyFriend(u.uid));
+                users.forEach(function(element) {
+                    resultArray.push(element);
+                });
+                console.log("resultArray1", resultArray)
+                searchState.userSearchResult = resultArray
+                console.log("searchState.userSearchResult ", searchState.userSearchResult )
             }
         }), (err) => {
             console.log('search user error', query, err)
@@ -1695,6 +1705,35 @@ let store = {
                 searchState.userSearchResult = [];
             }
         });
+        // app-server搜索扩展
+        appServerApi.searchAbcUserList(query)
+            .then(response => {
+                console.log(response)
+                if (response !== '') {
+                    // 转换成json
+                    let result = JSON.parse(response)
+                    console.log("result", result)
+                    if (result.code === 0 && '' !== result.result) {
+                        result.result.filter(u => {
+                            let userInfo = JSON.parse(u);
+                            console.log("userInfo", userInfo)
+                            let flag = !wfc.isMyFriend(userInfo.uid)
+                            if (flag) {
+                                resultArray.push(userInfo)
+                            }
+                            return !flag
+                        })
+                        searchState.userSearchResult = resultArray
+
+                        console.log("searchState.userSearchResult", searchState.userSearchResult)
+                    }
+                }
+            })
+            .catch(err => {
+                console.log('search abc user error', query, err)
+                // searchState.userSearchResult = resultArray
+            })
+            console.log("resultArray", resultArray)
     },
 
     searchChannel(query) {
@@ -2108,7 +2147,7 @@ let store = {
     },
 
     updateLinuxTitle(unreadCount) {
-        this.updateLinuxTitle.title = '野火IM';
+        this.updateLinuxTitle.title = 'OK';
         this.updateLinuxTitle.unreadCount = unreadCount;
         this.updateLinuxTitle.showTitle = true;
         if (!miscState.linuxUpdateTitleInterval) {
